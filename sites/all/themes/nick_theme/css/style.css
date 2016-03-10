@@ -1,0 +1,43 @@
+body.html.front.logged-in.no-sidebars.page-node.toolbar.toolbar-drawer{
+  background-color:#000066;
+  color:white;
+}
+
+div#name-and-slogan{
+  background-color: black;
+  width:14%;
+  float: left;
+  height:115px;
+  text-align: center;
+  border: 1px solid blue;
+  border-top-left-radius: 2em;
+}
+
+div#name-and-slogan > div#site-name{
+  padding-top:20px;
+}
+
+div#name-and-slogan > div > strong > a:link{
+  text-decoration: none;
+  font-size: 400%;
+  color: white;
+}
+div#name-and-slogan > div > strong > a:visited{
+  color: white;
+}
+
+div#first-time > div.item-list > ul > li > a:visited,
+div#first-time > div.item-list > ul > li > a:link{
+  color:white;
+  text-decoration: none;
+}
+
+div.section.clearfix > a > img{
+  height:115px;
+  border: 1px solid blue;
+  border-bottom-right-radius: 2em;
+}
+
+form#node-admin-content {
+  background-color:#000066;
+}

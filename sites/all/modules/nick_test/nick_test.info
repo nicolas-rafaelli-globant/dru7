@@ -1,0 +1,12 @@
+name = Nick Test
+description = "Just one test."
+package = Nick
+version = VERSION
+core = 7.x
+
+; Information added by Drupal.org packaging script on 2016-02-24
+version = "7.43"
+project = "drupal"
+
+stylesheets[all][] = css/style.css
+stylesheets[all][] = less/style.less

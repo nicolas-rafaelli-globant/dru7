@@ -1,0 +1,323 @@
+<?php
+
+
+//2.1 Demonstrate an ability to register paths to define how URL requests are handled in Drupal using hook_menu and hook_menu_alter
+/**
+ * Implements hook_menu().
+ */
+function nick_test_menu() {
+  $items['admin/pokemon'] = array(
+    'title'            => 'Pokémon',
+    'type'             => MENU_NORMAL_ITEM,
+    'position'         => 'right',
+    'weight'           => 100,
+    'access callback'  => 'nick_test_permission',
+    'access arguments' => array('administer site configuration'),
+    'page callback'    => 'nick_test_pokemon',
+  );
+  $items['admin/form'] = array(
+    'title' => 'Nick Form',
+    'type'             => MENU_NORMAL_ITEM,
+    'position'         => 'right',
+    'weight'           => 100,
+    'page callback'   => array('drupal_get_form'),
+    'page arguments'  => array('nick_test_simple_form'),
+    'access callback' => TRUE,
+    'access arguments' => array('administer site configuration'),
+  );
+  return $items;
+}
+
+/*
+ * Pokemon Callback Function.
+ */
+function nick_test_pokemon(){
+  $list = array();
+  $nid_load = db_select('node' , 'nid')
+    ->condition('type', 'pokemon')
+    ->fields('nid')
+    ->execute();
+  foreach ($nid_load as $node) {
+    $list[$node->title]=$node->nid;
+  }
+  $tr_table = '';
+  foreach ($list as $pkmn => $number) {
+    $num_load = db_select('field_data_field_number' , 'field_number_value')
+    ->condition('entity_id', $number)
+    ->fields('field_number_value')
+    ->execute()
+    ->fetchAssoc();
+    if(strlen($num_load['field_number_value']) < 3){
+      $num_image = '0' . $num_load['field_number_value'];
+      if(strlen($num_image) < 3){
+        $num_image = '0' . $num_image;
+      }
+      else{
+       $num_image = $num_image;
+      }
+    }
+    else{
+      $num_image = $num_load['field_number_value'];
+    }
+    $tr_table = $tr_table. '<tr>
+     <td><a href="'.file_create_url('node/'.$number).'">'.$num_load['field_number_value'].'</a></td>
+     <td><a href="'.file_create_url('node/'.$number).'">'.$pkmn.'</a></td>
+     <td><img src="http://assets.pokemon.com/assets/cms2/img/pokedex/full/'.$num_image.'.png"></td>
+    </tr>';
+  }
+
+  $table = '<img style="width:50%; margin-left:23%;" src="https://upload.wikimedia.org/wikipedia/commons/thumb/f/f7/English_Pok%C3%A9mon_logo.svg/2000px-English_Pok%C3%A9mon_logo.svg.png"><br><br>
+  <table class="table_pokemon" align="center">
+  <tr>
+   <td>Number</td>
+   <td>Name</td>
+   <td>Image</td>
+  </tr>'.$tr_table.'</table>';
+
+  return $table;
+}
+
+function nick_test_simple_form($form, &$form_submit){
+  $form['pokemon']= array(
+    '#title' => t('Favorite Pokemon'),
+    '#type'  => 'textfield',
+    '#required' => TRUE,
+    '#description' => t('What is your favorite Pokemon? Charizard? No wait-'),
+  );
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => 'Submit',
+  );
+  return $form;
+}
+
+/**
+ * Implements hook_permission().
+ */
+function nick_test_permission(){
+  return array(
+    'pokemon' => array(
+      'title' => t('Pokemon'),
+      'description' => t('Acces to Pokemon'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_form_alter().
+ */
+function nick_test_form_alter(&$form, &$form_alter, $form_id){
+  if($form_id=='pokemon_node_form'){
+    $form['#validate'][] = 'nick_test_pokemon_validate';
+    $form['actions']['preview']['#validate'][] = 'nick_test_pokemon_validate';
+  }
+  if($form_id=='nick_test_simple_form'){
+    $form['actions']['submit']['#submit'][] ='nick_test_simple_form_submit';
+  }
+}
+
+function nick_test_simple_form_submit(&$form, &$form_state){
+  $value = strtolower($form_state['values']['pokemon']);
+  $nid_load = db_select('node' , 'nid')
+    ->condition('type', 'pokemon')
+    ->condition('title', $value)
+    ->fields('nid')
+    ->execute()
+    ->fetchAssoc();
+  $link = '<a href="'.file_create_url('node/'. $nid_load['nid']).'">'.$nid_load['title'].'</a>';
+  if(!empty($nid_load['nid'])){
+    drupal_set_message($link);
+  } else {
+    drupal_set_message('Not found.');
+  }
+}
+
+/**
+ * Implements hook_custom_theme().
+ */
+function nick_test_custom_theme() {
+  return 'nick_theme';
+}
+
+/**
+ * implements hook_node_view()
+ */
+function nick_test_node_view($node, $view_mode, $langcode){
+  $var=array('node'=>$node);
+  if( empty($_GET['iframe_preview'])) {
+    nick_test_preprocess_node($var,FALSE);
+  }
+  if(isset($var['nick_preview'])) {
+    $node->content['nick_preview']=$var['nick_preview'];
+  }
+}
+
+/**
+ * Implements theme_preprocess_node().
+ */
+function nick_test_preprocess_node(&$vars,$hook) {
+  module_load_include('inc', 'node', 'node.pages');
+  $node = $vars['node'];
+  $function = __FUNCTION__ . '_' . $vars['node']->type;
+  if (function_exists($function)) {
+    if(!empty($vars['content']['nick_preview'])) {
+      foreach($vars['content'] as $element_name => $element ) {
+        if(strpos($element_name, 'nick_preview') === FALSE ) {
+          unset($vars['content'][$element_name]);
+        }
+      }
+    }
+    $entity_type = 'node';
+    $wrapper = entity_metadata_wrapper($entity_type, $node);
+    $prop_info = $wrapper->getPropertyInfo();
+    if($wrapper && count($prop_info) > 0) {
+      foreach($prop_info as $field_name => $field) {
+        if( !empty($field['type']) && strpos($field['type'], 'field_collection_item') !== FALSE ) {
+          if(!empty($node->{$field_name}[LANGUAGE_NONE])){
+            foreach($node->{$field_name}[LANGUAGE_NONE] as $entity_fc_field_pos => $entity_fc_field) {
+              if( empty($node->{$field_name}[LANGUAGE_NONE][$entity_fc_field_pos]['entity']) ) {
+                $fcie = entity_load('field_collection_item', array($entity_fc_field['value']));
+                $node->{$field_name}[LANGUAGE_NONE][$entity_fc_field_pos]['entity'] = $fcie[$entity_fc_field['value']];
+              }
+            }
+          }
+        }
+      }
+    }
+    $function($vars, $hook);
+    if(empty($node->in_preview)) {
+      $wrapper = entity_metadata_wrapper('node', $node);
+      $prop_info = $wrapper->getPropertyInfo();
+      foreach($prop_info as $field_name => $field) {
+        if( !empty($field['type']) && strpos($field['type'], 'field_collection_item') ) {
+          if( !empty($node->{$field_name}[LANGUAGE_NONE]) ) {
+            foreach ($node->{$field_name}[LANGUAGE_NONE] as $entity_fc_field_pos => $entity_fc_field) {
+              if (!empty($node->{$field_name}[LANGUAGE_NONE][$entity_fc_field_pos]['entity'])) {
+                unset($vars['node']->{$field_name}[LANGUAGE_NONE][$entity_fc_field_pos]['entity']);
+              }
+            }
+          }
+
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Extension of theme_preprocess_node(). for 360 Spin content type
+ */
+function nick_test_preprocess_node_pokemon(&$vars,$hook) {
+  $node = entity_metadata_wrapper('node', $vars['node']);
+  $pokemon_data = array();
+  $pokemon_data['title'] = $node->title->value();
+  $image = !empty($node->field_pkmn_image->value()['fid']) ? file_load($node->field_pkmn_image->value()['fid']) : '';
+  $pokemon_data['image'] = !empty($node->field_pkmn_image->value()['fid']) ? file_create_url($image->uri) : '';
+  $pokemon_data['number'] = $node->field_number->value();
+  $pokemon_data['gen'] = $node->field_generation->value();
+  $pokemon_data['primary'] = $node->field_primary_type->value();
+  $pokemon_data['secondary'] = $node->field_secondary_type->value();
+  $pokemon_data['object'] = $node->field_object->value();
+  $pokemon_data['ability'] = $node->field_ability->value();
+  $pokemon_data['nature'] = $node->field_nature->value();
+  $pokemon_data['ivs'] = array();
+  $pokemon_data['evs'] = array();
+  $pokemon_data['moves'] = array();
+
+  $ivs = $node->field_ivs->value();
+  if(!empty($ivs)){
+    foreach($ivs as $key => $iv){
+      if(is_array($iv)){
+        if(!empty($iv)){
+          $pokemon_data['ivs'][$key]=$iv[LANGUAGE_NONE][0]['value'];
+        }
+      }
+    }
+  }
+
+  $evs = $node->field_evs->value();
+  if(!empty($evs)){
+    foreach($evs as $key => $ev){
+      if(is_array($ev)){
+        if(!empty($ev)){
+          $pokemon_data['evs'][$key]=$ev[LANGUAGE_NONE][0]['value'];
+        }
+      }
+    }
+  }
+
+  $moves = $node->field_moves->value();
+  if(!empty($moves)){
+    foreach($moves as $key => $move){
+      if(is_array($move)){
+        if(!empty($move)){
+          $pokemon_data['moves'][$key]=$move[LANGUAGE_NONE][0]['value'];
+        }
+      }
+    }
+  }
+
+  $render = array(
+    '#pokemon_data'  => $pokemon_data,
+    '#theme'         => 'pokemon',
+  );
+
+  $vars['nick_preview'] =  $render;
+}
+
+/**
+ * Implements hook_theme().
+ */
+function nick_test_theme($existing, $type, $theme, $path) {
+  return array(
+    'pokemon' => array(
+      'template' => 'pokemon',
+      'path' => $path.'/templates',
+      'type' => 'theme',
+      'variables' => array(
+        'pokemon_data' => '',
+      ),
+    ),
+  );
+}
+
+function nick_test_pokemon_validate($form, &$form_state){
+  $values = $form_state['values'];
+  $evs = $values['field_evs'][LANGUAGE_NONE][0];
+  $total_evs = 0;
+  foreach ($evs as $key => $ev) {
+    if(is_array($ev)){
+      $ev = $ev[LANGUAGE_NONE][0]['value'];
+      $total_evs = $total_evs + $ev;
+    }
+  }
+  if($total_evs > 510){
+    form_set_error('field_evs', t('Pokemon are limited to 252 EVs per stat and 510 EVs across all six'));
+  }
+}
+
+
+
+
+
+
+
+
+//-----------------------------------------------------------------------------
+/*function nick_test_menu_alter(&$items) {
+  $items['admin/content']= 'nick_test_die_page';
+}
+
+function nick_test_die_page() {
+  die;
+}*/
+//-----------------------------------------------------------------------------
+/*function pokemon(){
+  return '<center>Pokemon!! <br>
+  <img 
+  src="
+  https://upload.wikimedia.org/wikipedia/commons/thumb/f/f7/English_Pok%C3%A9mon_logo.svg/2000px-English_Pok%C3%A9mon_logo.svg.png
+  " 
+  style="width:50%"></center>';
+}*/
+//-----------------------------------------------------------------------------
