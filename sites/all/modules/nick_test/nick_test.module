@@ -60,7 +60,7 @@ function nick_test_pokemon(){
       $num_image = $num_load['field_number_value'];
     }
     $tr_table = $tr_table. '<tr>
-     <td><a href="'.file_create_url('node/'.$number).'">'.$num_load['field_number_value'].'</a></td>
+     <td><a href="'.file_create_url('node/'.$number).'">#'.$num_load['field_number_value'].'</a></td>
      <td><a href="'.file_create_url('node/'.$number).'">'.$pkmn.'</a></td>
      <td><img src="http://assets.pokemon.com/assets/cms2/img/pokedex/full/'.$num_image.'.png"></td>
     </tr>';
