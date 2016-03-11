@@ -464,8 +464,6 @@ function nick_test_init(){
       dsm($url);
     }
   }*/
-  
-  
 }
 
 function nick_test_cron(){
