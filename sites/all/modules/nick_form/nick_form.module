@@ -1,0 +1,51 @@
+<?php
+
+/**
+ * Implements hook_menu().
+ */
+function nick_form_menu() {
+  $items['admin/megaform'] = array(
+    'title'            => 'Mega Form',
+    'type'             => MENU_NORMAL_ITEM,
+    'position'         => 'right',
+    'weight'           => 100,
+    'page callback'    => array('drupal_get_form'),
+    'page arguments'   => array('nick_form_mega'),
+    'access callback'  => TRUE,
+    'access arguments' => array('administer site configuration'),
+  );
+  return $items;
+}
+
+function nick_form_mega($form, &$form_submit){
+  $form['mega_title']= array(
+    '#title' => t('Title'),
+    '#type'  => 'textfield',
+    '#required' => TRUE,
+  );
+  $form['mega_body']= array(
+    '#title' => t('Body'),
+    '#type'  => 'textfield',
+    '#required' => FALSE,
+  );
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => 'Submit',
+  );
+  return $form;
+}
+
+function nick_form_form_alter($form, &$form_state, $form_id){
+  if($form_id == 'nick_form_mega'){
+    $form['actions']['submit']['#submit'][] ='nick_form_mega_submit';
+  }
+}
+
+function nick_form_mega_submit(&$form, &$form_state){
+  $values = $form_state['values'];
+  $title = $values['mega_title'];
+  $body = $values['mega_body'];
+  $message = $title.'<br>'.$body;
+  drupal_mail('nick_form_mega', 'nico-nbb@hotmail.com', 'Test', $message, variable_get('site_mail', 'an@example.com'));
+  drupal_set_message('Thank you for testing!');
+}
