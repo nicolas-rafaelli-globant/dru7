@@ -1,5 +1,5 @@
 <?php
-
+//Nick Test!
 
 //2.1 Demonstrate an ability to register paths to define how URL requests are handled in Drupal using hook_menu and hook_menu_alter
 /**
@@ -130,6 +130,11 @@ function nick_test_permission(){
 /**
  * Implements hook_form_alter().
  */
+
+// hook_form_BASE_FORM_ID_alter : Modules can implement hook_form_BASE_FORM_ID_alter() to modify a specific base form, rather than implementing hook_form_alter() and checking for conditions that would identify the shared form constructor. 
+//-------------------------------------------------------------------------------------------------------
+//hook_form_FORM_ID_alter: Modules can implement hook_form_FORM_ID_alter() to modify a specific form, rather than implementing hook_form_alter() and checking the form ID, or using long switch statements to alter multiple forms.
+
 function nick_test_form_alter(&$form, &$form_alter, $form_id){
   if($form_id=='pokemon_node_form'){
     $form['#validate'][] = 'nick_test_pokemon_validate';
@@ -400,7 +405,7 @@ function nick_test_die_page() {
 
 
 /**
- * Implementes hook_block_view_alter().
+ * Implements hook_block_view_alter().
  */
 
 function nick_test_block_view_alter(&$data, $block){
@@ -464,6 +469,7 @@ function nick_test_init(){
       dsm($url);
     }
   }*/
+
 }
 
 function nick_test_cron(){
@@ -472,7 +478,7 @@ function nick_test_cron(){
   }*/
   $result = db_update('block_custom')
   ->fields(array(
-    'body' => 'Cron at '.date('h:i:s', REQUEST_TIME).'.',
+    'body' => 'Cron was at '.date('h:i:s', REQUEST_TIME).'.',
   ))
   ->condition('bid', 2)
   ->execute();
