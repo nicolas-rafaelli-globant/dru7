@@ -1,0 +1,293 @@
+<?php
+
+/**
+ * Implements hook_menu().
+ */
+
+function new_module_menu(){
+  $items['my-module/%/edit'] = array(
+    'page callback' => 'mymodule_abc_edit',
+    'page arguments' => array(1),
+    'access callback'     => TRUE,
+  );
+  $items['admin/config/system/foo'] = array(
+    'title' => 'Foo settings',
+    'type' => MENU_NORMAL_ITEM,
+    'access callback'     => TRUE,
+    // Page callback, etc. need to be added here.
+  );
+  // Make "Tab 1" the main tab on the "Foo settings" page
+  $items['admin/config/system/foo/tab1'] = array(
+    'title' => 'Tab 1',
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+    'access callback'     => TRUE,
+    // Access callback, page callback, and theme callback will be inherited
+    // from 'admin/config/system/foo', if not specified here to override.
+  );
+  // Make an additional tab called "Tab 2" on "Foo settings"
+  $items['admin/config/system/foo/tab2'] = array(
+    'title' => 'Tab 2',
+    'type' => MENU_LOCAL_TASK,
+    'access callback'     => TRUE,
+    // Page callback and theme callback will be inherited from
+    // 'admin/config/system/foo', if not specified here to override.
+    // Need to add access callback or access arguments.
+  );
+  return $items;
+}
+
+function mymodule_abc_edit($abc_id = 0){
+  //print '<h1>'.$abc.'</h1>';
+  $sql = db_query("SELECT * FROM {node} WHERE nid = :abc_id", array(':abc_id' => $abc_id));
+  $sql_rows = $sql->fetchField();
+  if(!$sql) {
+    // problem with query
+    $sql = 'There is a problem with the query.';
+  }
+  elseif ($sql_rows) {
+    // results returned
+    $sql = 'Node: ' . $sql_rows . '.<br>Type: ' . db_query("SELECT * FROM {node} WHERE nid = :abc_id", array(':abc_id' => $sql_rows))->fetchObject()->type . '.';
+  }
+  else {
+    // no results, but good query
+    $sql= 'Node does not exists.';
+  }
+  return $sql;
+}
+
+
+/**
+ * Implements hook_menu_alter().
+ */
+function new_module_menu_alter(&$items) {
+  // Example - disable the page at node/add
+  //$items['node/add']['access callback'] = FALSE;
+}
+
+/**
+ * Implements hook_form().
+ */
+function new_module_form($node, &$form_state){
+  $type = node_type_get_type($node);
+  $form['title'] = array(
+    '#type' => 'textfield',
+    '#title' => check_plain($type->title_label),
+    '#default_value' => !empty($node->title) ? $node->title : '',
+    '#required' => TRUE, '#weight' => -5
+  );
+
+  $form['field1'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Custom field'),
+    '#default_value' => $node->field1,
+    '#maxlength' => 127,
+  );
+  $form['selectbox'] = array(
+    '#type' => 'select',
+    '#title' => t('Select box'),
+    '#default_value' => $node->selectbox,
+    '#options' => array(
+      1 => 'Option A',
+      2 => 'Option B',
+      3 => 'Option C',
+    ),
+    '#description' => t('Choose an option.'),
+  );
+
+  return $form;
+}
+
+/**
+ * Implements hook_node_delete().
+ */
+function new_module_node_delete($node){
+  // Respond to node deletion.
+  // dsm($node);
+}
+
+/**
+ * Implements hook_node_prepare().
+ */
+function new_module_node_prepare($node){
+  // Act on a node object about to be shown on the add/edit form.
+  //dsm($node);
+}
+
+/**
+ * Implements hook_node_presave().
+ */
+function new_module_node_presave($node){
+  // Act on a node being inserted or updated.
+  $form_id = $node->form_id;
+  if($form_id == 'article_node_form'){
+    $name  = $node->name;
+    $type  = $node->type;
+    $title = $node->title;
+    $body  = $node->body[LANGUAGE_NONE][0]['value'];
+    #Compact Form.
+    /*db_insert('article_nick')
+    ->fields(array(
+      'name'  => $name,
+      'type'  => $type,
+      'title' => $title,
+      'body'  => $body,
+    ))
+    ->execute();*/
+
+    # No-Compact.
+    /* $options = array(
+      'name'  => $name,
+      'type'  => $type,
+      'title' => $title,
+      'body'  => $body,
+    );
+    $query = db_insert('article_nick', $options);
+    */
+  }
+}
+
+function new_module_init(){
+  if (drupal_is_front_page()) {
+  	$or = db_condition('or');
+  	drupal_set_message('This is the front page... And hook_init is working.');
+  	$result = db_query('SELECT * FROM {node} WHERE type = :nid', array(':nid' => 'pokemon'));
+  	// Show result using foreach.
+  	/*foreach($result as $record){
+  	  dsm($record);
+  	  //1-Pikachu
+  	  //2-Aipom
+  	  //3-Charizard
+  	}*/
+
+  	// Using fetchObject() = objects.
+  	/*$record = $result->fetchObject();
+  	dsm($record);// Pikachu
+  	$record = $result->fetchObject();
+  	dsm($record);// Aipom
+  	$record = $result->fetchObject();
+  	dsm($record);// Charizard*/
+
+  	// Using fetchAssoc() = arrays.
+  	/*$record = $result->fetchAssoc();
+  	dsm($record);// Pikachu
+  	$record = $result->fetchAssoc();
+  	dsm($record);// Aipom
+  	$record = $result->fetchAssoc();
+  	dsm($record);// Charizard*/
+
+  	// Show nid with fetchColumn() = string.
+  	/*$data = $result->fetchColumn(1);
+  	dsm($data); // 1
+  	$data = $result->fetchColumn(1);
+  	dsm($data); // 2
+  	$data = $result->fetchColumn(1);
+  	dsm($data); // 7*/
+
+  	// Show all the objects in array.
+  	/*$result = $result->fetchAll();
+  	dsm($result);*/
+
+  	// Show all the objects in array with titles.
+  	/*$result = $result->fetchAllAssoc('title');
+  	dsm($result);*/
+
+  	// Show keys.
+  	/*$result = $result->fetchAllKeyed();
+  	dsm($result);*/
+
+  	// Key => Some column.
+  	/*$data1 = $result->fetchAllKeyed(0,4); // would be nid => title
+    dsm($data1);*/
+
+    /*$col = $result->fetchCol();
+    dsm($col);*/
+
+    // Count the rows.
+    /*$row_count = $result->rowCount();
+    dsm($row_count);*/
+
+    //---------------------------------------------------------------------------------------------
+
+    $select = db_select('node', 'n')
+      ->fields('n', array('nid', 'title', 'type'))
+      ->condition('type', 'pokemon')
+      //->groupBy('type') // ('type', 'ASC'); or ('type', 'DESC'); // $query->orderRandom();
+      ->execute()
+      ->fetchAllAssoc('title');
+    //dsm($select);
+
+    #Example with join:
+    /*$select = db_select('node', 'n');
+    $alias = $select->join('users', 'u', 'n.uid = u.uid AND u.uid = :uid', array(':uid' => 5));
+    $select
+      ->fields('n', array('nid', 'title', 'type'))
+      ->condition('type', 'pokemon');
+    $select->execute();
+    foreach($result as $record){
+      dsm($record->title.$record->uid);
+    }*/
+
+    $num = '';
+    $delete = db_delete('node')
+      ->condition('nid', $num)
+      ->execute();
+    if($delete){
+      drupal_set_message('Node deleted.');
+    }
+
+    //Note that in the vast majority of cases you will not need to request the connection object directly. Rather, the procedural wrappers will do so for you. The only reason you would ever need to access a connection object directly is if you are doing complex manipulation of more than one database and you do not want to change the active database.
+    $conn = Database::getConnection();
+    //dsm($conn);
+    $result = $conn->query('SELECT nid, title FROM {node} GROUP BY nid');
+    //dsm($result);
+    foreach($result as $record){
+      //dsm($record);
+    }
+
+    #To set the active connection, use:
+    // db_set_active($key);
+
+    # $databases syntax.
+    /*$databases['default']['default'] = array(
+      'driver' => 'mysql',
+      'database' => 'drupaldb',
+      'username' => 'username',
+      'password' => 'secret',
+      'host' => 'localhost',
+    );*/
+    
+    #Distinct.
+    // Some SQL queries may produce duplicate results. In such cases, duplicate rows may be filtered out using the "DISTINCT" keyword in a static query. In a dynamic query, use the distinct() method.
+    // $query->distinct();
+    // Note that DISTINCT can introduce a performance penalty, so do not use it unless there is no other way to restrict the result set to avoid duplicates.
+
+    #Ranges and Limits.
+    // Queries may also be restricted to a certain subset of the records found. In general this is known as a "range query". In MySQL, this is implemented using the LIMIT clause. To limit the range of a query, use the range() method, which takes two arguments: the first specifies offset and the second specifies limit
+    // $query->range(0, 10);
+
+    #Unions.
+    // To combine the results from multiple SELECT queries into a single result you use UNION like this:
+    // $table2 = db_select('table2', 't2')
+    //   ->fields('t2', array('column3', 'column4'));
+    // $query = db_select('table1', 't1')
+    //   ->fields('t1', array('column1', 'column2'))
+    //   ->union($table2);
+
+    #Tagging.
+    // Any dynamic Select query may be "tagged" with one or more strings. These tags serve to identify the type of query it is, which in turn allows alter hooks to determine if they need to take action. Tags should be an alphanumeric lowercase string, following the same rules as a PHP variable. (That is, letters, numbers, and underscores only and must begin with a letter.) To add a tag to a query, use the addTag() method:
+    // $query->addTag('node_access');
+    // TRUE if this query object has this tag.
+    // $query->hasTag('example');
+    // TRUE if this query object has every single one of the specified tags.
+    // $query->hasAllTags('example1', 'example2');
+    // TRUE if this query object has at least one of the specified tags.
+    // $query->hasAnyTag('example1', 'example2');
+
+    $result_set = db_query("SELECT nid, title FROM {node} ORDER BY nid");
+    foreach ($result_set as $record) {
+      // Do something with each $record
+      //$node = node_load($record->nid);
+      //dsm($node);
+    }
+  }
+}
